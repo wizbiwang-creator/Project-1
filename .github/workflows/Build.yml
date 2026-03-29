@@ -45,6 +45,8 @@ jobs:
     # 3️⃣ Clean old builds to avoid cache corruption
     - name: Clean previous build
       run: |
+        # Ensure we're in the directory with buildozer.spec
+        # If your buildozer.spec is in a subfolder, cd into it here
         buildozer android clean --force
         rm -rf .buildozer
         rm -rf ~/.buildozer
@@ -56,7 +58,6 @@ jobs:
     # 5️⃣ Build APK (VERBOSE with debug info)
     - name: Build with Buildozer
       run: |
-        # Optional: Add --debug for more logs
         buildozer -v android debug --force
 
     # 6️⃣ Upload APK manually (more reliable)
