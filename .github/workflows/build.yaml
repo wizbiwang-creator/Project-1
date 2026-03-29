@@ -1,0 +1,69 @@
+name: CI - Build APK (Stable)
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    env:
+      JAVA_HOME: /usr/lib/jvm/java-11-openjdk-amd64
+
+    steps:
+    # 1️⃣ Checkout
+    - name: Checkout source
+      uses: actions/checkout@v4
+
+    # 2️⃣ Install system dependencies (VERY IMPORTANT)
+    - name: Install dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y \
+          python3-pip \
+          build-essential \
+          git \
+          zip \
+          unzip \
+          openjdk-11-jdk \
+          autoconf \
+          libtool \
+          pkg-config \
+          zlib1g-dev \
+          libncurses5-dev \
+          libncursesw5-dev \
+          libtinfo5 \
+          cmake \
+          libffi-dev \
+          libssl-dev
+
+        python3 -m pip install --upgrade pip
+        pip install cython buildozer
+
+    # 3️⃣ Clean old builds to avoid cache corruption
+    - name: Clean previous build
+      run: |
+        # Ensure we're in the directory with buildozer.spec
+        # If your buildozer.spec is in a subfolder, cd into it here
+        buildozer android clean --force
+        rm -rf .buildozer
+        rm -rf ~/.buildozer
+
+    # 4️⃣ Accept Android licenses
+    - name: Accept Android licenses
+      run: yes | sdkmanager --licenses || true
+
+    # 5️⃣ Build APK (VERBOSE with debug info)
+    - name: Build with Buildozer
+      run: |
+        buildozer -v android debug --force
+
+    # 6️⃣ Upload APK manually (more reliable)
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: apk
+        path: |
+          .buildozer/android/platform/build-*/dists/*/bin/*.apk
