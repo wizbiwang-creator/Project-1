@@ -42,26 +42,33 @@ jobs:
         python3 -m pip install --upgrade pip
         pip install cython buildozer
 
-    # 3️⃣ Clean old builds to avoid cache corruption
+    # 3️⃣ Verify presence of buildozer.spec
+    - name: List files to verify buildozer.spec presence
+      run: ls -l
+
+    # 4️⃣ Clean previous build (ensure correct directory)
     - name: Clean previous build
       run: |
-        # Ensure we're in the directory with buildozer.spec
-        # If your buildozer.spec is in a subfolder, cd into it here
+        if [ ! -f buildozer.spec ]; then
+          echo "buildozer.spec not found!"
+          exit 1
+        fi
         buildozer android clean --force
         rm -rf .buildozer
         rm -rf ~/.buildozer
 
-    # 4️⃣ Accept Android licenses
+    # 5️⃣ Accept Android licenses
     - name: Accept Android licenses
       run: yes | sdkmanager --licenses || true
 
-    # 5️⃣ Build APK (VERBOSE with debug info)
+    # 6️⃣ Build APK
     - name: Build with Buildozer
       run: |
+        # Ensure we're in the directory with buildozer.spec (assumed current directory)
         buildozer -v android debug --force
 
-    # 6️⃣ Upload APK manually (more reliable)
-    - name: Upload APK
+    # 7️⃣ Upload APK artifact
+    - name: Upload APK artifact
       uses: actions/upload-artifact@v4
       with:
         name: apk
