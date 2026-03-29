@@ -42,9 +42,10 @@ jobs:
         python3 -m pip install --upgrade pip
         pip install cython buildozer
 
-    # 3️⃣ Clean old builds (fix cache corruption)
-    - name: Clean buildozer
+    # 3️⃣ Clean old builds to avoid cache corruption
+    - name: Clean previous build
       run: |
+        buildozer android clean --force
         rm -rf .buildozer
         rm -rf ~/.buildozer
 
@@ -52,10 +53,11 @@ jobs:
     - name: Accept Android licenses
       run: yes | sdkmanager --licenses || true
 
-    # 5️⃣ Build APK (VERBOSE)
+    # 5️⃣ Build APK (VERBOSE with debug info)
     - name: Build with Buildozer
       run: |
-        buildozer -v android debug
+        # Optional: Add --debug for more logs
+        buildozer -v android debug --force
 
     # 6️⃣ Upload APK manually (more reliable)
     - name: Upload APK
