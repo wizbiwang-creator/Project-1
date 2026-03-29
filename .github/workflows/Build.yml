@@ -1,4 +1,4 @@
-name: CI - Build APK
+name: CI - Build APK (Stable)
 
 on:
   push:
@@ -9,36 +9,58 @@ jobs:
   build:
     runs-on: ubuntu-22.04
 
+    env:
+      JAVA_HOME: /usr/lib/jvm/java-11-openjdk-amd64
+
     steps:
     # 1️⃣ Checkout
     - name: Checkout source
       uses: actions/checkout@v4
 
-    # 2️⃣ Cache Buildozer global directory
-    - name: Cache Buildozer Global
-      uses: actions/cache@v4
-      with:
-        path: .buildozer_global
-        key: buildozer-global-${{ hashFiles('buildozer.spec') }}
+    # 2️⃣ Install system dependencies (VERY IMPORTANT)
+    - name: Install dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y \
+          python3-pip \
+          build-essential \
+          git \
+          zip \
+          unzip \
+          openjdk-11-jdk \
+          autoconf \
+          libtool \
+          pkg-config \
+          zlib1g-dev \
+          libncurses5-dev \
+          libncursesw5-dev \
+          libtinfo5 \
+          cmake \
+          libffi-dev \
+          libssl-dev
 
-    # 3️⃣ Cache .buildozer folder
-    - name: Cache Buildozer
-      uses: actions/cache@v4
-      with:
-        path: .buildozer
-        key: ${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
+        python3 -m pip install --upgrade pip
+        pip install cython buildozer
 
-    # 4️⃣ Build APK (VERBOSE MODE FOR DEBUGGING)
+    # 3️⃣ Clean old builds (fix cache corruption)
+    - name: Clean buildozer
+      run: |
+        rm -rf .buildozer
+        rm -rf ~/.buildozer
+
+    # 4️⃣ Accept Android licenses
+    - name: Accept Android licenses
+      run: yes | sdkmanager --licenses || true
+
+    # 5️⃣ Build APK (VERBOSE)
     - name: Build with Buildozer
-      id: buildozer
-      uses: ArtemSBulgakov/buildozer-action@v1
-      with:
-        command: buildozer -v android debug
-        buildozer_version: stable
+      run: |
+        buildozer -v android debug
 
-    # 5️⃣ Upload APK (FIXED VERSION)
+    # 6️⃣ Upload APK manually (more reliable)
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
-        name: my-apk
-        path: ${{ steps.buildozer.outputs.filename }}
+        name: apk
+        path: |
+          .buildozer/android/platform/build-*/dists/*/bin/*.apk
